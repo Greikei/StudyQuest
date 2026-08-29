@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>StudentHelper - StudyQuest</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f0f1a" />
+
+  <datalist id="subject-suggestions">
+    <option value="Matematyka"></option>
+    <option value="Język polski"></option>
+    <option value="Język angielski"></option>
+    <option value="Historia"></option>
+    <option value="Informatyka"></option>
+    <option value="Biologia"></option>
+    <option value="Chemia"></option>
+    <option value="Fizyka"></option>
+    <option value="Geografia"></option>
+  </datalist>
+
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #111120; --panel: #0f0f1a; --card: #1e1e2e;
+      --border: #2a2a3a; --text: #f0f0f8; --subtext: #8080a0; --accent: #f5c842;
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f4f9; --panel: #ffffff; --card: #ffffff;
+      --border: #e0e0e0; --text: #1a1a2e; --subtext: #666680; --accent: #d4a017;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
+    #app { width: 100%; max-width: 420px; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+    #header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+    #logo { background: var(--accent); color: #111; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+    #xp-area { flex: 1; }
+    #xp-label { font-size: 13px; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between; }
+    #xp-bar-bg { background: var(--border); height: 8px; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+    #xp-bar-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.4s; }
+    .theme-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text); }
+    #content { flex: 1; overflow-y: auto; padding: 18px; padding-bottom: 30px; }
+    .screen { display: none; }
+    .screen.visible { display: block; }
+    .screen-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+    .btn-primary { background: var(--accent); color: #111; border: none; border-radius: 10px; padding: 9px 18px; font-weight: 700; cursor: pointer; }
+    .btn-ghost { background: var(--border); color: var(--text); border: none; border-radius: 10px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    .btn-danger { background: #3a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b33; border-radius: 10px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    .field { margin-bottom: 14px; text-align: left; }
+    .field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--subtext); margin-bottom: 6px; }
+    .field input, .field textarea, .field select { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px; color: var(--text); outline: none; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
+    .note-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; cursor: pointer; }
+    .note-title { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+    .note-preview { color: var(--subtext); font-size: 13px; margin-bottom: 12px; }
+    .note-footer { display: flex; align-items: center; justify-content: space-between; }
+    .note-subject { font-size: 11px; font-weight: 700; background: var(--border); color: var(--accent); border-radius: 6px; padding: 2px 8px; }
+    .quiz-option { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-size: 14px; text-align: left; cursor: pointer; margin-bottom: 8px; }
+    .quiz-option:hover { border-color: var(--accent); }
+    .quiz-option.selected { background: var(--border); border-color: var(--accent); color: var(--accent); font-weight: bold; }
+    .quiz-option.correct { background: #1a3a2a; border-color: #4ade80; color: #4ade80; font-weight: bold; }
+    .quiz-option.wrong { background: #3a1a1a; border-color: #ff6b6b; color: #ff6b6b; }
+    .lesson-row { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 12px; padding: 12px; margin-bottom: 6px; }
+    .break-row { text-align: center; font-size: 12px; color: var(--subtext); margin: 6px 0; border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); padding: 4px 0; }
+    
+    #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
+    .cal-hdr { text-align: center; font-size: 11px; color: var(--subtext); font-weight: 700; padding: 4px 0; }
+    .cal-cell { text-align: center; padding: 10px 0; border-radius: 8px; font-size: 13px; cursor: pointer; background: none; border: 1px solid transparent; color: var(--text); }
+    .cal-cell:hover { background: var(--border); }
+    .cal-cell.today { color: var(--accent); border-color: var(--accent); font-weight: 700; }
+    .cal-cell.selected { background: var(--accent); color: #111; font-weight: 700; }
+    .has-event::after { content: ''; display: block; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; margin: 2px auto 0; }
+    .cal-cell.selected::after { background: #111; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat-lbl { font-size: 11px; color: var(--subtext); margin-top: 2px; }
+
+    #tabs { border-top: 1px solid var(--border); display: flex; background: var(--panel); position: sticky; bottom: 0; z-index: 100; }
+    .tab-btn { flex: 1; background: none; border: none; color: var(--subtext); padding: 12px 0; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tab-btn.active { color: var(--accent); }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal.visible { display: flex; }
+    .modal-body { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px; width: 100%; max-width: 380px; max-height: 80vh; overflow-y: auto; }
+    input, select, textarea { font-size: 16px !important; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="screen-login" class="screen visible" style="padding: 30px 20px; text-align: center;">
+    <div style="font-size: 50px; margin-bottom: 8px;">✦</div>
+    <h2 class="screen-title" id="auth-title">Zaloguj się</h2>
+
+    <div id="form-login-box">
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="student@uczelnia.pl" /></div>
+      <div class="field"><label>Hasło</label><input type="password" id="login-password" placeholder="••••••••" /></div>
+      <button class="btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;" onclick="handleLogin()">Zaloguj się</button>
+      <p style="margin-top: 16px; font-size: 13px; color: var(--subtext);">
+        Nie masz konta? <a href="#" style="color: var(--accent); font-weight: bold;" onclick="toggleAuthMode('register')">Zarejestruj się</a>
+      </p>
+    </div>
+
+    <div id="form-register-box" style="display: none;">
+      <div class="field"><label>Nazwa użytkownika</label><input type="text" id="reg-username" placeholder="Jan Kowalski" /></div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="student@uczelnia.pl" /></div>
+      <div class="field"><label>Hasło</label><input type="password" id="reg-password" placeholder="••••••••" /></div>
+      <button class="btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;" onclick="handleRegister()">Stwórz konto</button>
+      <p style="margin-top: 16px; font-size: 13px; color: var(--subtext);">
+        Masz już konto? <a href="#" style="color: var(--accent); font-weight: bold;" onclick="toggleAuthMode('login')">Zaloguj się</a>
+      </p>
+    </div>
+  </div>
+
+  <div id="main-ui" style="display: none; flex-direction: column; min-height: 100vh;">
+    <div id="header">
+      <div id="logo">✦</div>
+      <div id="xp-area">
+        <div id="xp-label"><span id="header-user">Gracz</span><span id="xp-numbers">0 / 100 XP</span></div>
+        <div id="xp-bar-bg"><div id="xp-bar-fill"></div></div>
+      </div>
+      <button class="theme-btn" onclick="toggleTheme()">🌗</button>
+    </div>
+
+    <div id="content">
+      <div id="screen-notes" class="screen visible">
+        <div class="row">
+          <div class="screen-title">Notatki</div>
+          <button class="btn-primary" onclick="showAddNote()">+ Nowa</button>
+        </div>
+        <div class="field"><input type="text" id="notes-search" placeholder="Szukaj notatki..." oninput="renderNotes()" /></div>
+        <div id="notes-list"></div>
+      </div>
+      <div id="screen-add" class="screen">
+        <div class="row">
+          <button class="btn-ghost" onclick="switchTab('notes')">← Wróć</button>
+          <div class="screen-title" style="margin:0" id="note-form-title">Nowa notatka</div>
+          <button class="btn-primary" onclick="saveNote()">Zapisz</button>
+        </div>
+        <input type="hidden" id="edit-note-id" />
+        <div class="field"><label>Temat</label><input id="note-title" type="text" /></div>
+        <div class="field"><label>Przedmiot</label><input id="note-subject" type="text" list="subject-suggestions" /></div>
+        <div class="field"><label>Treść</label><textarea id="note-content" rows="8"></textarea></div>
+      </div>
+      <div id="screen-quiz" class="screen">
+        <div class="row">
+          <button class="btn-ghost" onclick="switchTab('notes')">← Wróć</button>
+          <div class="screen-title" style="margin:0">Quiz AI</div>
+        </div>
+        <div id="quiz-body"></div>
+      </div>
+      <div id="screen-plan" class="screen">
+        <div class="screen-title">Plan Zajęć</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:12px;">
+          <button class="btn-primary" id="day-btn-0" onclick="selectDay(0)">Pn</button>
+          <button class="btn-ghost" id="day-btn-1" onclick="selectDay(1)">Wt</button>
+          <button class="btn-ghost" id="day-btn-2" onclick="selectDay(2)">Śr</button>
+          <button class="btn-ghost" id="day-btn-3" onclick="selectDay(3)">Cz</button>
+          <button class="btn-ghost" id="day-btn-4" onclick="selectDay(4)">Pt</button>
+        </div>
+        <div id="plan-lessons"></div>
+        <div id="add-lesson-form" style="display:none; background:var(--card); border:1px solid var(--accent); border-radius:14px; padding:14px; margin-top:12px;">
+          <div class="field"><label>Przedmiot</label><input id="ls-sub" type="text" list="subject-suggestions" /></div>
+          <div style="display:flex;gap:10px">
+            <div class="field" style="flex:1"><label>Od</label><input type="time" id="ls-start" /></div>
+            <div class="field" style="flex:1"><label>Do</label><input type="time" id="ls-end" /></div>
+          </div>
+          <button class="btn-primary" style="width:100%" onclick="addLesson()">Dodaj zajęcia</button>
+        </div>
+        <button class="btn-ghost" style="width:100%;margin-top:10px;border:1px dashed var(--border)" onclick="showLessonForm()">+ Dodaj zajęcia</button>
+      </div>
+      <div id="screen-cal" class="screen">
+        <div class="screen-title">Kalendarz</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">
+          <button class="btn-ghost" onclick="changeMonth(-1)">&#8249;</button>
+          <span id="cal-month-label" style="font-weight:700; font-size:15px"></span>
+          <button class="btn-ghost" onclick="changeMonth(1)">&#8250;</button>
+        </div>
+        <div id="cal-grid"></div>
+        <div id="cal-events"></div>
+      </div>
+      <div id="screen-profile" class="screen">
+        <div class="screen-title">Mój Profil</div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; text-align:center; margin-bottom:16px">
+          <div id="profile-name" style="font-size:20px; font-weight:700;">Gracz</div>
+          <div id="profile-level" style="color:var(--accent); font-weight:700;">Poziom 1</div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-num" id="stat-quizzes">0</div><div class="stat-lbl">Rozwiązane quizy</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-avg">0%</div><div class="stat-lbl">Średnia skuteczność</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-quiz-xp">0</div><div class="stat-lbl">XP z quizów</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-notes-count">0</div><div class="stat-lbl">Notatki</div></div>
+        </div>
+
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--subtext); margin-bottom:8px">Ostatnie quizy</div>
+        <div id="quiz-history-list" style="margin-bottom:18px"></div>
+
+        <div class="row">
+          <button class="btn-ghost" style="flex:1" onclick="exportData()">💾 Eksport (JSON)</button>
+          <button class="btn-ghost" style="flex:1" onclick="document.getElementById('import-file').click()">📂 Import (JSON)</button>
+          <input type="file" id="import-file" style="display:none" onchange="importData(event)" />
+        </div>
+        <button class="btn-danger" style="width:100%; margin-top:12px;" onclick="handleLogout()">Wyloguj się</button>
+        <button class="btn-danger" style="width:100%; margin-top:8px; background:none; border:none; color:var(--subtext);" onclick="resetAppData()">Resetuj wszystkie dane</button>
+      </div>
+    </div>
+
+    <div id="tabs">
+      <button class="tab-btn active" id="tab-notes" onclick="switchTab('notes')"><span>📝</span><span>Notatki</span></button>
+      <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')"><span>📅</span><span>Plan</span></button>
+      <button class="tab-btn" id="tab-cal" onclick="switchTab('cal')"><span>🗓️</span><span>Kalendarz</span></button>
+      <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')"><span>👤</span><span>Profil</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="note-modal" class="modal">
+  <div class="modal-body">
+    <h3 id="modal-note-title" class="screen-title" style="margin-bottom:8px"></h3>
+    <div id="modal-note-sub" style="font-size:12px; color:var(--accent); margin-bottom:12px"></div>
+    <p id="modal-note-content" style="line-height:1.5; font-size:14px; white-space:pre-wrap; margin-bottom:20px"></p>
+    <div style="display:flex; flex-direction:column; gap:8px">
+      <button class="btn-primary" onclick="startQuiz(state.activeNoteId)">✦ Rozpocznij Quiz AI (10 pytań)</button>
+      <div style="display:flex; gap:8px">
+        <button class="btn-ghost" style="flex:1" onclick="closeNoteModal()">Zamknij</button>
+        <button class="btn-ghost" onclick="editNoteFromModal()">✏️ Edytuj</button>
+        <button class="btn-danger" onclick="deleteNoteFromModal()">🗑️ Usuń</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="levelup-modal-wrap" class="modal">
+  <div class="modal-body" style="text-align:center">
+    <div style="font-size:50px">🎉</div>
+    <h2 style="color:var(--accent); margin:10px 0">NOWY POZIOM!</h2>
+    <p id="levelup-text" style="margin-bottom:20px; font-weight:600"></p>
+    <button class="btn-primary" style="width:100%" onclick="closeLevelUpModal()">Super!</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+
+var state = {
+  user: null, xp: 0, notes: [],
+  schedule: { 0:[], 1:[], 2:[], 3:[], 4:[] },
+  selectedDay: 0, activeNoteId: null,
+  activeQuizTitle: "", quizQuestions: [], quizAnswers: {}, quizSubmitted: false,
+  quizHistory: [],
+  calEvents: {}, calYear: new Date().getFullYear(), calMonth: new Date().getMonth(), calSelected: null
+};
+
+var MONTHS = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+var DAY_HDRS = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+
+function loadState() {
+  var saved = localStorage.getItem('studyquest_state');
+  if (saved) {
+    try {
+      var parsed = JSON.parse(saved);
+      state = Object.assign(state, parsed);
+    } catch(e){}
+  }
+}
+
+function saveState() { 
+  localStorage.setItem('studyquest_state', JSON.stringify(state)); 
+  syncDataToServer(state);
+}
+
+async function syncDataToServer(appState) {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    await fetch('/api/user-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(appState)
+    });
+  } catch (err) {
+    console.error("Błąd synchronizacji w tle:", err);
+  }
+}
+
+async function loadDataFromServer() {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  try {
+    const res = await fetch('/api/user-data', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error("Błąd pobierania danych:", err);
+  }
+  return null;
+}
+
+async function initApp() {
+  loadState();
+  var token = localStorage.getItem('token');
+  if (token && state.user) {
+    document.getElementById('screen-login').style.display = 'none';
+    document.getElementById('main-ui').style.display = 'flex';
+    document.getElementById('header-user').textContent = state.user;
+    document.getElementById('profile-name').textContent = state.user;
+
+    const serverData = await loadDataFromServer();
+    if (serverData) {
+      if (Array.isArray(serverData.schedule)) {
+        serverData.schedule = { 0:[], 1:[], 2:[], 3:[], 4:[] };
+      }
+      if (!serverData.calEvents) {
+        serverData.calEvents = {};
+      }
+      state = Object.assign(state, serverData);
+      saveState();
+    }
+
+    refreshXP(); renderNotes(); renderPlan(); renderCalendar(); renderProfile();
+  } else {
+    document.getElementById('screen-login').style.display = 'block';
+    document.getElementById('main-ui').style.display = 'none';
+  }
+}
+
+function toggleAuthMode(mode) {
+  if (mode === 'register') {
+    document.getElementById('auth-title').textContent = "Dołącz do StudyQuest";
+    document.getElementById('form-login-box').style.display = 'none';
+    document.getElementById('form-register-box').style.display = 'block';
+  } else {
+    document.getElementById('auth-title').textContent = "Zaloguj się do StudyQuest";
+    document.getElementById('form-login-box').style.display = 'block';
+    document.getElementById('form-register-box').style.display = 'none';
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!email || !password) return alert("Wypełnij e-mail i hasło.");
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Błąd logowania');
+
+    localStorage.setItem('token', data.token);
+    state.user = data.user.username;
+    if (data.userData) {
+      if (Array.isArray(data.userData.schedule)) data.userData.schedule = { 0:[], 1:[], 2:[], 3:[], 4:[] };
+      if (!data.userData.calEvents) data.userData.calEvents = {};
+      state = Object.assign(state, data.userData);
+    }
+    saveState();
+    initApp();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function handleRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+
+  if (!username || !email || !password) return alert("Wypełnij wszystkie pola.");
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Błąd rejestracji');
+
+    localStorage.setItem('token', data.token);
+    state.user = data.user.username;
+    if (data.userData) {
+      state = Object.assign(state, data.userData);
+    }
+    saveState();
+    initApp();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem('token');
+  state.user = null;
+  saveState();
+  initApp();
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
+
+function calcLevel(xp) {
+  var level = 1, needed = 100, remaining = xp;
+  while (remaining >= needed) { remaining -= needed; level++; needed += 500; }
+  return { level, remaining, needed };
+}
+
+function addXP(amount) {
+  var oldLvl = calcLevel(state.xp).level;
+  state.xp += amount;
+  var newInfo = calcLevel(state.xp);
+  saveState(); refreshXP();
+  if (newInfo.level > oldLvl) {
+    document.getElementById('levelup-text').textContent = "Osiągnąłeś Poziom " + newInfo.level + "!";
+    document.getElementById('levelup-modal-wrap').classList.add('visible');
+  }
+}
+
+function refreshXP() {
+  var info = calcLevel(state.xp);
+  var pct = Math.round((info.remaining / info.needed) * 100);
+  document.getElementById('xp-numbers').textContent = info.remaining + " / " + info.needed + " XP";
+  document.getElementById('xp-bar-fill').style.width = pct + "%";
+  document.getElementById('profile-level').textContent = "Poziom " + info.level;
+}
+
+function closeLevelUpModal() { document.getElementById('levelup-modal-wrap').classList.remove('visible'); }
+
+function switchTab(name) {
+  ['notes', 'plan', 'cal', 'profile', 'add', 'quiz'].forEach(s => {
+    var el = document.getElementById('screen-' + s); if(el) el.classList.remove('visible');
+  });
+  ['notes', 'plan', 'cal', 'profile'].forEach(t => {
+    var el = document.getElementById('tab-' + t); if(el) el.classList.remove('active');
+  });
+  document.getElementById('screen-' + name).classList.add('visible');
+  if (document.getElementById('tab-' + name)) document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'profile') renderProfile();
+  if (name === 'cal') renderCalendar();
+}
+
+function renderNotes() {
+  var list = document.getElementById('notes-list');
+  var query = document.getElementById('notes-search').value.toLowerCase();
+  list.innerHTML = "";
+  var filtered = state.notes.filter(n => n.title.toLowerCase().includes(query) || n.subject.toLowerCase().includes(query));
+  filtered.forEach(note => {
+    list.innerHTML += `
+      <div class="note-card" onclick="openNoteModal(${note.id})">
+        <div class="note-title">${note.title}</div>
+        <div class="note-preview">${note.content.substring(0, 70)}...</div>
+        <div class="note-footer">
+          <span class="note-subject">${note.subject}</span>
+          <button class="btn-primary" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); startQuiz(${note.id})">✦ Quiz AI</button>
+        </div>
+      </div>`;
+  });
+}
+
+function showAddNote() {
+  document.getElementById('edit-note-id').value = "";
+  document.getElementById('note-title').value = "";
+  document.getElementById('note-subject').value = "";
+  document.getElementById('note-content').value = "";
+  document.getElementById('note-form-title').textContent = "Nowa notatka";
+  switchTab('add');
+}
+
+function saveNote() {
+  var id = document.getElementById('edit-note-id').value;
+  var title = document.getElementById('note-title').value.trim();
+  var subject = document.getElementById('note-subject').value.trim();
+  var content = document.getElementById('note-content').value.trim();
+
+  if(!title || !content) return alert("Wypełnij tytuł i treść.");
+  if (id) {
+    var note = state.notes.find(n => n.id == id);
+    if(note) { note.title = title; note.subject = subject; note.content = content; }
+  } else {
+    state.notes.unshift({ id: Date.now(), title, subject: subject || "Ogólne", content, time: new Date().toLocaleDateString("pl-PL") });
+    addXP(30);
+  }
+  saveState(); renderNotes(); switchTab('notes');
+}
+
+function openNoteModal(id) {
+  state.activeNoteId = id;
+  var note = state.notes.find(n => n.id === id); if(!note) return;
+  document.getElementById('modal-note-title').textContent = note.title;
+  document.getElementById('modal-note-sub').textContent = note.subject + " • " + note.time;
+  document.getElementById('modal-note-content').textContent = note.content;
+  document.getElementById('note-modal').classList.add('visible');
+}
+
+function closeNoteModal() { document.getElementById('note-modal').classList.remove('visible'); }
+
+function editNoteFromModal() {
+  var note = state.notes.find(n => n.id === state.activeNoteId); if(!note) return;
+  closeNoteModal();
+  document.getElementById('edit-note-id').value = note.id;
+  document.getElementById('note-title').value = note.title;
+  document.getElementById('note-subject').value = note.subject;
+  document.getElementById('note-content').value = note.content;
+  document.getElementById('note-form-title').textContent = "Edycja notatki";
+  switchTab('add');
+}
+
+function deleteNoteFromModal() {
+  if (confirm("Czy na pewno usunąć tę notatkę?")) {
+    state.notes = state.notes.filter(n => n.id !== state.activeNoteId);
+    saveState(); closeNoteModal(); renderNotes();
+  }
+}
+
+function startQuiz(noteId) {
+  var note = state.notes.find(n => n.id === noteId); if (!note) return;
+  state.quizQuestions = []; state.quizAnswers = {}; state.quizSubmitted = false;
+  state.activeQuizTitle = note.title;
+  closeNoteModal(); switchTab('quiz');
+
+  document.getElementById('quiz-body').innerHTML = `
+    <div style="text-align:center; color:var(--subtext); margin-top:60px">
+      <div style="font-size:36px; margin-bottom:12px; color:var(--accent)">✦</div>
+      <div>Generowanie 10 pytań z notatki przy użyciu Gemini AI...</div>
+    </div>`;
+
+  fetchQuiz(note.content, note.title);
+}
+
+async function fetchQuiz(noteContent, noteTitle) {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch('/api/quiz', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ noteContent, noteTitle })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || `Błąd serwera ${response.status}`);
+    }
+
+    const data = JSON.parse(await response.text());
+    if (data.questions && data.questions.length > 0) {
+      state.quizQuestions = data.questions;
+      renderQuiz();
+      return;
+    }
+  } catch (err) {
+    console.error("Błąd quizu:", err);
+    document.getElementById('quiz-body').innerHTML = `
+      <div style="text-align:center; color:#ff6b6b; padding:20px;">
+        <div style="font-size:30px; margin-bottom:10px;">⚠️</div>
+        <b>Nie udało się wygenerować pytań</b>
+        <p style="font-size:12px; margin-top:8px; color:var(--subtext);">${err.message}</p>
+        <button class="btn-ghost" style="margin-top:16px;" onclick="switchTab('notes')">← Wróć do notatek</button>
+      </div>`;
+  }
+}
+
+function renderQuiz() {
+  var body = document.getElementById('quiz-body');
+  body.innerHTML = "";
+  var total = state.quizQuestions.length;
+
+  if (state.quizSubmitted) {
+    var correct = state.quizQuestions.filter((q, i) => state.quizAnswers[i] === q.answer).length;
+    var points = correct * 20;
+    body.innerHTML += `
+      <div style="background:var(--card); border:1px solid var(--accent); border-radius:14px; padding:18px; text-align:center; margin-bottom:16px">
+        <div style="font-size:32px; margin-bottom:8px">${correct === total ? "🏆" : "⭐"}</div>
+        <div style="color:var(--accent); font-weight:700; font-size:18px">${correct} / ${total} poprawnych odpowiedzi</div>
+        <div style="color:var(--subtext); font-size:13px; margin-top:4px">+${points} XP zdobyte!</div>
+      </div>`;
+  }
+
+  state.quizQuestions.forEach((q, qi) => {
+    var border = "var(--border)";
+    if (state.quizSubmitted) { border = (state.quizAnswers[qi] === q.answer) ? "#4ade80" : "#ff6b6b"; }
+
+    var optHTML = "";
+    q.options.forEach((opt, oi) => {
+      var cls = "quiz-option";
+      if (!state.quizSubmitted && state.quizAnswers[qi] === oi) cls += " selected";
+      if (state.quizSubmitted && oi === q.answer) cls += " correct";
+      if (state.quizSubmitted && state.quizAnswers[qi] === oi && oi !== q.answer) cls += " wrong";
+      var dis = state.quizSubmitted ? "disabled" : "";
+      optHTML += `<button class="${cls}" ${dis} onclick="selectAnswer(${qi}, ${oi})">${opt}</button>`;
+    });
+
+    body.innerHTML += `
+      <div style="background:var(--card); border:1px solid ${border}; border-radius:14px; padding:16px; margin-bottom:14px">
+        <div style="font-weight:600; font-size:14px; margin-bottom:12px">${qi + 1}. ${q.question}</div>
+        ${optHTML}
+      </div>`;
+  });
+
+  if (!state.quizSubmitted) {
+    var allDone = state.quizQuestions.every((q, i) => state.quizAnswers[i] !== undefined);
+    if (allDone) {
+      body.innerHTML += `<button class="btn-primary" style="width:100%; padding:12px; margin-top:6px" onclick="submitQuiz()">Sprawdź odpowiedzi i odbierz XP</button>`;
+    } else {
+      body.innerHTML += `<button class="btn-ghost" style="width:100%; padding:12px; cursor:default; opacity:0.6">Zaznacz odpowiedzi na wszystkie pytania (${Object.keys(state.quizAnswers).length}/${total})</button>`;
+    }
+  }
+}
+
+function selectAnswer(qi, oi) {
+  if (state.quizSubmitted) return;
+  state.quizAnswers[qi] = oi;
+  renderQuiz();
+}
+
+function submitQuiz() {
+  state.quizSubmitted = true;
+  var total = state.quizQuestions.length;
+  var correct = state.quizQuestions.filter((q, i) => state.quizAnswers[i] === q.answer).length;
+  var points = correct * 20;
+
+  if (!state.quizHistory) state.quizHistory = [];
+  state.quizHistory.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString("pl-PL"),
+    title: state.activeQuizTitle || "Quiz",
+    score: correct,
+    total: total,
+    xp: points
+  });
+
+  addXP(points);
+  renderQuiz();
+}
+
+function selectDay(idx) {
+  state.selectedDay = idx;
+  for(var i=0; i<5; i++) document.getElementById('day-btn-'+i).className = (i===idx)?"btn-primary":"btn-ghost";
+  renderPlan();
+}
+
+function renderPlan() {
+  if (!state.schedule) state.schedule = { 0:[], 1:[], 2:[], 3:[], 4:[] };
+  var lessons = state.schedule[state.selectedDay] || [];
+  lessons.sort((a,b) => a.start.localeCompare(b.start));
+  var html = "";
+
+  for(var i=0; i<lessons.length; i++) {
+    var l = lessons[i];
+    html += `<div class="lesson-row"><div style="font-weight:700">${l.sub}</div><div style="font-size:12px; color:var(--subtext)">${l.start} - ${l.end}</div></div>`;
+    if (i < lessons.length - 1) {
+      var nextL = lessons[i+1];
+      var diff = getMinutes(nextL.start) - getMinutes(l.end);
+      if (diff > 0) html += `<div class="break-row">☕ Przerwa: ${diff} min</div>`;
+    }
+  }
+  document.getElementById('plan-lessons').innerHTML = html || "<p style='text-align:center;color:var(--subtext);margin-top:20px'>Brak zajęć</p>";
+}
+
+function getMinutes(timeStr) { var p = timeStr.split(':'); return parseInt(p[0])*60 + parseInt(p[1]); }
+function showLessonForm() { document.getElementById('add-lesson-form').style.display = 'block'; }
+function addLesson() {
+  var sub = document.getElementById('ls-sub').value.trim();
+  var start = document.getElementById('ls-start').value;
+  var end = document.getElementById('ls-end').value;
+  if(!sub || !start || !end) return alert("Wypełnij pola.");
+  if (!state.schedule[state.selectedDay]) state.schedule[state.selectedDay] = [];
+  state.schedule[state.selectedDay].push({sub, start, end});
+  saveState();
+  document.getElementById('add-lesson-form').style.display = 'none';
+  renderPlan();
+}
+
+function changeMonth(dir) {
+  state.calMonth += dir;
+  if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+  if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  if (!state.calEvents) state.calEvents = {};
+  document.getElementById("cal-month-label").textContent = MONTHS[state.calMonth] + " " + state.calYear;
+
+  var today = new Date();
+  var firstWD = new Date(state.calYear, state.calMonth, 1).getDay();
+  var offset = (firstWD === 0) ? 6 : firstWD - 1;
+  var daysMax = new Date(state.calYear, state.calMonth + 1, 0).getDate();
+
+  var html = DAY_HDRS.map(d => `<div class="cal-hdr">${d}</div>`).join("");
+  for (var b = 0; b < offset; b++) html += '<div></div>';
+
+  for (var d = 1; d <= daysMax; d++) {
+    var key = state.calYear + "-" + state.calMonth + "-" + d;
+    var isToday = d === today.getDate() && state.calMonth === today.getMonth() && state.calYear === today.getFullYear();
+    var isSel = state.calSelected === d;
+    var hasEvent = !!state.calEvents[key] && state.calEvents[key].length > 0;
+
+    var cls = "cal-cell";
+    if (isToday) cls += " today";
+    if (isSel) cls += " selected";
+    if (hasEvent) cls += " has-event";
+
+    html += `<button class="${cls}" onclick="selectCalDay(${d})">${d}</button>`;
+  }
+
+  document.getElementById("cal-grid").innerHTML = html;
+  renderCalEvents();
+}
+
+function selectCalDay(d) {
+  state.calSelected = (state.calSelected === d) ? null : d;
+  renderCalendar();
+}
+
+function renderCalEvents() {
+  var el = document.getElementById("cal-events");
+  if (!state.calSelected) {
+    el.innerHTML = '<p style="text-align:center; color:var(--subtext); font-size:13px; margin-top:16px">Wybierz dzień z kalendarza</p>';
+    return;
+  }
+
+  var key = state.calYear + "-" + state.calMonth + "-" + state.calSelected;
+  var events = state.calEvents[key] || [];
+
+  var html = `<div style="font-weight:700; color:var(--subtext); font-size:12px; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">
+    Wydarzenia: ${state.calSelected} ${MONTHS[state.calMonth]}</div>`;
+
+  events.forEach((ev, index) => {
+    html += `
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="background:var(--border); color:var(--accent); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:700; margin-right:6px;">${ev.sub}</span>
+          <span style="font-size:13px">${ev.desc}</span>
+        </div>
+        <button onclick="deleteCalEvent(${index})" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-weight:bold">&times;</button>
+      </div>`;
+  });
+
+  html += `<div id="add-event-area">
+    <button class="btn-ghost" style="width:100%; margin-top:8px; border:1px dashed var(--border)" onclick="showEventForm()">+ Dodaj wydarzenie</button>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+function showEventForm() {
+  document.getElementById("add-event-area").innerHTML = `
+    <div style="background:var(--card); border:1px solid var(--accent); border-radius:12px; padding:12px; margin-top:8px">
+      <div class="field"><label>Przedmiot</label><input id="ev-sub" type="text" list="subject-suggestions" /></div>
+      <div class="field"><label>Opis wydarzenia</label><input id="ev-desc" placeholder="Np. Sprawdzian, kartkówka..." /></div>
+      <div style="display:flex; gap:8px">
+        <button class="btn-primary" style="flex:1" onclick="addCalEvent()">Dodaj</button>
+        <button class="btn-ghost" style="flex:1" onclick="renderCalEvents()">Anuluj</button>
+      </div>
+    </div>`;
+}
+
+function addCalEvent() {
+  var sub = document.getElementById("ev-sub").value.trim();
+  var desc = document.getElementById("ev-desc").value.trim();
+  if (!sub || !desc) return alert("Wypełnij wszystkie pola.");
+
+  var key = state.calYear + "-" + state.calMonth + "-" + state.calSelected;
+  if (!state.calEvents[key]) state.calEvents[key] = [];
+  state.calEvents[key].push({ sub, desc });
+
+  saveState(); addXP(15); renderCalendar();
+}
+
+function deleteCalEvent(index) {
+  var key = state.calYear + "-" + state.calMonth + "-" + state.calSelected;
+  state.calEvents[key].splice(index, 1);
+  saveState(); renderCalendar();
+}
+
+function renderProfile() {
+  var history = state.quizHistory || [];
+  var totalQuizzes = history.length;
+
+  var totalCorrect = history.reduce((sum, q) => sum + q.score, 0);
+  var totalQuestions = history.reduce((sum, q) => sum + q.total, 0);
+  var avgPct = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+  var totalQuizXP = history.reduce((sum, q) => sum + q.xp, 0);
+
+  document.getElementById('stat-quizzes').textContent = totalQuizzes;
+  document.getElementById('stat-avg').textContent = avgPct + "%";
+  document.getElementById('stat-quiz-xp').textContent = totalQuizXP;
+  document.getElementById('stat-notes-count').textContent = state.notes.length;
+
+  var list = document.getElementById('quiz-history-list');
+  if (history.length === 0) {
+    list.innerHTML = `<p style="color:var(--subtext); font-size:13px; text-align:center; padding:10px 0;">Brak rozwiązanych quizów.</p>`;
+    return;
+  }
+
+  list.innerHTML = history.slice(0, 5).map(q => `
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-weight:700; font-size:13px">${q.title}</div>
+        <div style="font-size:11px; color:var(--subtext)">${q.date} • +${q.xp} XP</div>
+      </div>
+      <div style="font-weight:700; color:var(--accent); font-size:14px">${q.score}/${q.total}</div>
+    </div>
+  `).join("");
+}
+
+function exportData() {
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href", dataStr);
+  anchor.setAttribute("download", "studyquest_backup.json");
+  anchor.click();
+}
+
+function importData(e) {
+  var file = e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    try { state = JSON.parse(evt.target.result); saveState(); alert("Zaimportowano!"); location.reload(); }
+    catch(err) { alert("Błąd pliku JSON."); }
+  };
+  reader.readAsText(file);
+}
+
+function resetAppData() {
+  if (confirm("Reset usunie wszystkie lokalne dane. Kontynuować?")) {
+    localStorage.removeItem('studyquest_state');
+    localStorage.removeItem('token');
+    location.reload();
+  }
+}
+
+initApp();
+</script>
+</body>
+</html>
